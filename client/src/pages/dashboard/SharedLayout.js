@@ -4,17 +4,17 @@ import { Navbar, BigSidebar, SmallSideBar } from "../../components/index";
 const SharedLayout = () => {
   return (
     <Wrapper>
-      <main className="dashboard">
-        <SmallSideBar></SmallSideBar>
-        <BigSidebar></BigSidebar>
-        <div>
-          <Navbar></Navbar>
-          <div>
-            <Outlet />
-          </div>
+    <main className='dashboard'>
+      <SmallSideBar />
+      <BigSidebar />
+      <div>
+        <Navbar />
+        <div className='dashboard-page'>
+          <Outlet />
         </div>
-      </main>
-    </Wrapper>
+      </div>
+    </main>
+  </Wrapper>
   );
 };
 

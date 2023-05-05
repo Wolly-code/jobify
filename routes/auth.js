@@ -5,6 +5,7 @@ const router = express.Router();
 const _ = require("lodash");
 const bcrypt = require("bcrypt");
 const Joi = require("joi");
+const auth = require("../middleware/auth");
 require("dotenv").config();
 
 router.post("/login", async (req, res) => {
@@ -32,7 +33,7 @@ router.post("/login", async (req, res) => {
   const token = user.generateAuthToken();
 
   res.send({
-    user: _.pick(user, ["_id", "name", "email"]),
+    user: _.pick(user, ["_id", "name", "email", "lastName", "location"]),
     // user: user,
     token: token,
     location: user.location,
@@ -40,7 +41,7 @@ router.post("/login", async (req, res) => {
 });
 
 router.post("/register", async (req, res) => {
-  const { error } = validate(req.body);
+  const { error } = validate(req.body, true);
   if (error)
     return res.status(400).send({
       error: error.details[0].message,
@@ -62,19 +63,49 @@ router.post("/register", async (req, res) => {
   const token = user.generateAuthToken();
 
   res.header("x-auth-token", token).send({
-    user: _.pick(user, ["_id", "name", "email"]),
+    user: _.pick(user, ["_id", "name", "email", "lastName", "location"]),
     // user: user,
     token: token,
     location: user.location,
   });
 });
 
-router.get("/", async (req, res) => {
+router.get("/", auth, async (req, res) => {
   res.send("Whats up puta?");
 });
 
-router.patch("/", async (req, res) => {
-  res.send("Whats up puta?");
+router.patch("/", auth, async (req, res) => {
+  try {
+    // Validate the request body for non-password updates
+    console.log(req);
+    const { error } = validate(req.body);
+    if (error) return res.status(400).send(error.details[0].message);
+
+    // Find the user by ID and update their non-sensitive details
+    const user = await User.findOneAndUpdate(
+      req.user._id,
+      {
+        name: req.body.name,
+        // email: req.body.email,
+        lastName: req.body.lastName,
+        location: req.body.location,
+      },
+      { new: true }
+    );
+    if (!user)
+      return res.status(404).send({ error: "Cannot find the requested user" });
+
+    // Return the updated user object
+    res.send({
+      user: _.pick(user, ["_id", "name", "email", "lastName", "location"]),
+      // user: user,
+      token: req.savedToken,
+      location: user.location,
+    });
+  } catch (error) {
+    // If an error occurs, return a 500 error with the error message
+    res.status(500).send(error.message);
+  }
 });
 
 function validateLogin(req) {
